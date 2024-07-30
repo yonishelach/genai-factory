@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional
-from base import BaseWithMetadata
+from typing import List, Optional, Tuple
+from controller.src.schemas.base import BaseWithMetadata
 from pydantic import BaseModel
+
+
+class QueryItem(BaseModel):
+    question: str
+    session_id: Optional[str] = None
+    filter: Optional[List[Tuple[str, str]]] = None
+    data_source: Optional[str] = None
 
 
 class Message(BaseModel):

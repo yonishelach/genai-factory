@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from typing import Optional
-from base import BaseWithMetadata
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class Dataset(BaseWithMetadata):

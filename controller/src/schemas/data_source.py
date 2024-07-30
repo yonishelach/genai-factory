@@ -14,7 +14,7 @@
 
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from base import BaseWithMetadata
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class DataSourceType(str, Enum):

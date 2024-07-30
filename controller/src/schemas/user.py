@@ -13,13 +13,13 @@
 # limitations under the License.
 
 from typing import Optional
-from base import BaseWithMetadata
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class User(BaseWithMetadata):
-    project_id: str
+    project_id: str = None
     full_name: str
     email: str
-    policy: str
+    policy: Optional[str] = None
     features: Optional[dict] = None
     is_admin: Optional[bool] = False

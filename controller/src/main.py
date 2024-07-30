@@ -20,10 +20,13 @@ import click
 import yaml
 from tabulate import tabulate
 
-from controller.src.sqlclient import client
-from controller.src.model import User, DocCollection, QueryItem
+# from controller.src.sqlclient import client
+from controller.src.db_clients import client
+from controller.src.schemas import User, DataSource, Project, QueryItem
+# from controller.src.model import User, DocCollection, QueryItem
 from controller.src.config import config
-import controller.src.api as api
+# import controller.src.api as api
+from controller.src.api.utils import _send_to_application
 
 
 @click.group()
@@ -38,21 +41,40 @@ def initdb():
     click.echo("Running Init DB")
     session = client.get_db_session()
     client.create_tables(True)
-    # create a guest user, and the default document collection
+
+    # Create admin user:
+    click.echo("Creating admin user")
     client.create_user(
         User(
-            name="guest",
-            email="guest@any.com",
-            full_name="Guest User",
+            name="admin",
+            email="example@example.com",
+            full_name="Admin User",
+            is_admin=True,
         ),
         session=session,
     )
-    client.create_collection(
-        DocCollection(
+    user = client.get_user("admin", session=session).data
+    # Create project:
+    click.echo("Creating default project")
+    client.create_project(
+        Project(
             name="default",
-            description="Default Collection",
-            owner_name="guest",
-            category="vector",
+            description="Default Project",
+            owner_id=user.id,
+        ),
+        session=session,
+    )
+    project = client.get_project("default", session=session).data
+
+    # Create data source:
+    click.echo("Creating default data source")
+    client.create_data_source(
+        DataSource(
+            name="default",
+            description="Default Data Source",
+            owner_id=user.id,
+            project_id=project.id,
+            data_source_type="vector",
         ),
         session=session,
     )
@@ -90,7 +112,7 @@ def ingest(path, loader, metadata, version, collection, from_file):
 
     collection = collection or "default"
     click.echo(f"Running Data Ingestion from: {path} with loader: {loader}")
-    response = api._send_to_application(
+    response = _send_to_application(
         path=f"collections/{collection}/{loader}/ingest",
         method="POST",
         params=params,
@@ -129,7 +151,7 @@ def query(question, filter, collection, user, session, pipeline_name):
     data = json.dumps(query_item.dict())
 
     headers = {"x_username": user} if user else {}
-    response = api._send_to_application(
+    response = _send_to_application(
         path=f"pipeline/{pipeline_name}/run",
         method="POST",
         data=data,
@@ -165,54 +187,54 @@ def list_users(user, email):
 
 
 # add a command to list document collections, similar to the list users command
-@click.command("collections")
-@click.option("-o", "--owner", type=str, help="owner filter")
-@click.option(
-    "-m", "--metadata", type=(str, str), multiple=True, help="metadata filter"
-)
-def list_collections(owner, metadata):
-    """List document collections"""
-    click.echo("Running List Collections")
+# @click.command("collections")
+# @click.option("-o", "--owner", type=str, help="owner filter")
+# @click.option(
+#     "-m", "--metadata", type=(str, str), multiple=True, help="metadata filter"
+# )
+# def list_collections(owner, metadata):
+#     """List document collections"""
+#     click.echo("Running List Collections")
+#
+#     data = client.list_collections(owner, metadata, output_mode="short")
+#     table = format_table_results(data)
+#     click.echo(table)
 
-    data = client.list_collections(owner, metadata, output_mode="short")
-    table = format_table_results(data)
-    click.echo(table)
 
-
-@click.command("collection")
-@click.argument("name", type=str)
-@click.option("-o", "--owner", type=str, help="owner name")
-@click.option("-d", "--description", type=str, help="collection description")
-@click.option("-c", "--category", type=str, help="collection category")
-@click.option(
-    "-l", "--labels", multiple=True, default=[], help="metadata labels filter"
-)
-def update_collection(name, owner, description, category, labels):
-    """Create or update a document collection"""
-    click.echo("Running Create or Update Collection")
-    labels = fill_params(labels)
-
-    session = client.get_db_session()
-    # check if the collection exists, if it does, update it, otherwise create it
-    collection_exists = client.get_collection(name, session=session).success
-    if collection_exists:
-        client.update_collection(
-            session=session,
-            collection=DocCollection(
-                name=name, description=description, category=category, labels=labels
-            ),
-        ).with_raise()
-    else:
-        client.create_collection(
-            session=session,
-            collection=DocCollection(
-                name=name,
-                description=description,
-                owner_name=owner,
-                category=category,
-                labels=labels,
-            ),
-        ).with_raise()
+# @click.command("collection")
+# @click.argument("name", type=str)
+# @click.option("-o", "--owner", type=str, help="owner name")
+# @click.option("-d", "--description", type=str, help="collection description")
+# @click.option("-c", "--category", type=str, help="collection category")
+# @click.option(
+#     "-l", "--labels", multiple=True, default=[], help="metadata labels filter"
+# )
+# def update_collection(name, owner, description, category, labels):
+#     """Create or update a document collection"""
+#     click.echo("Running Create or Update Collection")
+#     labels = fill_params(labels)
+#
+#     session = client.get_db_session()
+#     # check if the collection exists, if it does, update it, otherwise create it
+#     collection_exists = client.get_collection(name, session=session).success
+#     if collection_exists:
+#         client.update_collection(
+#             session=session,
+#             collection=DocCollection(
+#                 name=name, description=description, category=category, labels=labels
+#             ),
+#         ).with_raise()
+#     else:
+#         client.create_collection(
+#             session=session,
+#             collection=DocCollection(
+#                 name=name,
+#                 description=description,
+#                 owner_name=owner,
+#                 category=category,
+#                 labels=labels,
+#             ),
+#         ).with_raise()
 
 
 # add a command to list chat sessions, similar to the list_users command
@@ -285,11 +307,11 @@ cli.add_command(print_config)
 
 cli.add_command(list)
 list.add_command(list_users)
-list.add_command(list_collections)
+# list.add_command(list_collections)
 list.add_command(list_sessions)
 
 cli.add_command(update)
-update.add_command(update_collection)
+# update.add_command(update_collection)
 
 if __name__ == "__main__":
     cli()

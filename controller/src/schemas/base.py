@@ -111,14 +111,15 @@ class Base(BaseModel):
         obj_dict = {
             k: v
             for k, v in struct.items()
-            if k in (metadata_fields + self._top_level_fields)
-            and k not in ["created", "updated"]
+            # if k in (metadata_fields + self._top_level_fields)
+            # and k not in ["created", "updated"]
+            if k not in ["created", "updated"]
         }
-        obj_dict["spec"] = {
-            k: v
-            for k, v in struct.items()
-            if k not in metadata_fields + self._top_level_fields
-        }
+        # obj_dict["spec"] = {
+        #     k: v
+        #     for k, v in struct.items()
+        #     if k not in metadata_fields + self._top_level_fields
+        # }
         labels = obj_dict.pop("labels", None)
         if uuid:
             obj_dict["id"] = uuid
@@ -143,12 +144,14 @@ class Base(BaseModel):
 
 
 class BaseWithMetadata(Base):
+    id: Optional[str] = None  # This is optional here but required in the ORM in order to be able to create new objects
     name: str
+    version: Optional[str] = ""
     description: Optional[str] = None
     labels: Optional[Dict[str, Union[str, None]]] = None
+    owner_id: Optional[str] = None
     created: Optional[Union[str, datetime]] = None
     updated: Optional[Union[str, datetime]] = None
-    version: Optional[str] = ""
 
 
 class OutputMode(str, Enum):

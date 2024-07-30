@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from .base import OutputMode
-from .chat_session import ChatSession
+from .chat_session import ChatSession, QueryItem
 from .data_source import DataSource
 from .dataset import Dataset
 from .document import Document

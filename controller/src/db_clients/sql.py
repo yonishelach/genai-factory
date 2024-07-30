@@ -1,13 +1,14 @@
-from base import Client
+from controller.src.db_clients.base import Client
 from typing import Union
 import sqlalchemy
 import uuid
 from sqlalchemy.orm import sessionmaker
-from controller.src.db.sql import BaseTable as Base
+from controller.src.db.sql import Base
 from controller.src.model import ApiResponse
 from controller.src.config import logger
 import controller.src.schemas as schemas
 import controller.src.db.sql as sqldb
+from controller.src.config import config
 
 
 class SQLClient(Client):
@@ -466,3 +467,6 @@ class SQLClient(Client):
             project_id=project_id,
             labels_match=labels_match,
         )
+
+
+client = SQLClient(config.sql_connection_str, verbose=config.verbose)

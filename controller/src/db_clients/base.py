@@ -60,23 +60,23 @@ class Client(ABC):
         pass
 
     @abstractmethod
-    def create_datasource(self, *args, **kwargs):
+    def create_data_source(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def get_datasource(self, *args, **kwargs):
+    def get_data_source(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def delete_datasource(self, *args, **kwargs):
+    def delete_data_source(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def update_datasource(self, *args, **kwargs):
+    def update_data_source(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def list_datasources(self, *args, **kwargs):
+    def list_data_sources(self, *args, **kwargs):
         pass
 
     @abstractmethod

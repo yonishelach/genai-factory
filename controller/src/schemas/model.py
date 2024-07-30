@@ -14,7 +14,7 @@
 
 from enum import Enum
 from typing import Optional
-from base import BaseWithMetadata
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class ModelType(str, Enum):

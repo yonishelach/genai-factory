@@ -14,10 +14,10 @@
 
 import datetime
 
-from typing import Any, Dict, List, Optional
-from sqlalchemy import (JSON, Column, ForeignKey, Index, Enum, BLOB, Table,
+from typing import Optional
+from sqlalchemy import (JSON, ForeignKey, Index, LargeBinary,
                         String, UniqueConstraint)
-from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship, Mapped, MappedColumn
+from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column, declared_attr
 
 # Create a base class for declarative class definitions
 Base = declarative_base()
@@ -33,10 +33,10 @@ def make_label(table):
             Index(f"idx_{table}_labels_name_value", "name", "value"),
         )
 
-        id: Mapped[int] = MappedColumn(primary_key=True)
+        id: Mapped[int] = mapped_column(primary_key=True)
         name: Mapped[str]  # in mysql collation="utf8_bin"
         value: Mapped[str]
-        parent: Mapped[int] = MappedColumn(ForeignKey(f"{table}.name"))
+        parent: Mapped[int] = mapped_column(ForeignKey(f"{table}.name"))
 
     return Label
 
@@ -52,54 +52,63 @@ def update_labels(obj, labels: dict):
             obj.labels.append(obj.Label(name=name, value=value, parent=obj.name))
 
 
-ingestions = Table(
-    "ingestions",
-    Base.metadata,
-    Column(
-        "data_source_id",
-        String(length=ID_LENGTH),
-        ForeignKey("data_sources.id"),
-        primary_key=True,
-    ),
-    Column(
-        "data_source_version",
-        String,
-        ForeignKey("data_sources.version"),
-        primary_key=True,
-    ),
-    Column(
-        "document_id",
-        String(length=ID_LENGTH),
-        ForeignKey("documents.id"),
-        primary_key=True,
-    ),
-    Column(
-        "document_version",
-        String,
-        ForeignKey("documents.version"),
-        primary_key=True,
-    ),
-    Column("extra_data", JSON),
-)
+# ingestions = Table(
+#     "ingestions",
+#     Base.metadata,
+#     Column(
+#         "data_source_id",
+#         String(length=ID_LENGTH),
+#         ForeignKey("data_sources.id"),
+#         primary_key=True,
+#     ),
+#     Column(
+#         "data_source_version",
+#         String,
+#         ForeignKey("data_sources.version"),
+#         primary_key=True,
+#     ),
+#     Column(
+#         "document_id",
+#         String(length=ID_LENGTH),
+#         ForeignKey("documents.id"),
+#         primary_key=True,
+#     ),
+#     Column(
+#         "document_version",
+#         String,
+#         ForeignKey("documents.version"),
+#         primary_key=True,
+#     ),
+#     Column("extra_data", JSON),
+# )
 
 
-class BaseTable(DeclarativeBase):
-    __tablename__ = "base_table"
+class BaseTable(Base):
+    __abstract__ = True
 
-    id: Mapped[str] = MappedColumn(String(ID_LENGTH), primary_key=True)
+    @declared_attr
+    def __tablename__(cls) -> str:
+        return "base_table"
+
+    @declared_attr
+    def Label(cls):
+        return make_label(cls.__tablename__)
+
+    @declared_attr
+    def labels(cls):
+        return relationship(cls.Label, cascade="all, delete-orphan")
+
+    id: Mapped[str] = mapped_column(String(ID_LENGTH), primary_key=True)
     name: Mapped[str]
-    version: Mapped[str] = MappedColumn(default="")
+    version: Mapped[str] = mapped_column(default="")
     description: Mapped[Optional[str]]
-    Label = make_label(__tablename__)
-    labels = relationship(Label, cascade="all, delete-orphan")
-    owner_id: Mapped[Optional[str]] = MappedColumn(String(ID_LENGTH), ForeignKey("users.name"))
-    date_created: Mapped[datetime.datetime] = MappedColumn(default=datetime.datetime.utcnow)
-    date_updated: Mapped[Optional[datetime.datetime]] = MappedColumn(
+    owner_id: Mapped[Optional[str]] = mapped_column(String(ID_LENGTH), ForeignKey("users.id"))
+    date_created: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
+    date_updated: Mapped[Optional[datetime.datetime]] = mapped_column(
         default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow,
     )
 
     def __init__(self, id, name, version=None, description=None, owner_id=None, labels=None):
-        super().__init__()
         self.id = id
         self.name = name
         self.version = version
@@ -121,103 +130,129 @@ class Project(BaseTable):
         labels=None,
     ):
         super().__init__(id, name, version, description, owner_id, labels)
+        print(self.labels)
         update_labels(self, {"_GENAI_FACTORY": True})
-
-
-class SourceType(Enum):
-    RELATIONAL = "relational"
-    VECTOR = "vector"
-    GRAPH = "graph"
-    KEY_VALUE = "key-value"
-    COLUMN_FAMILY = "column-family"
-    STORAGE = "storage"
-    OTHER = "other"
 
 
 class DataSource(BaseTable):
     __tablename__ = "data_sources"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
-    secret_keys: Mapped[Optional[List[str]]]
-    data_source_type: Mapped[SourceType]
-    database_kwargs: Mapped[Optional[Dict[str, Any]]]
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
+    secret_keys: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+    data_source_type: Mapped[str]
+    database_kwargs: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+
+    def __init__(
+        self,
+        id,
+        name,
+        version,
+        description,
+        owner_id,
+        project_id,
+        secret_keys=None,
+        data_source_type=None,
+        database_kwargs=None,
+        labels=None,
+    ):
+        super().__init__(id, name, version, description, owner_id, labels=labels)
+        self.project_id = project_id
+        self.secret_keys = secret_keys
+        self.data_source_type = data_source_type
+        self.database_kwargs = database_kwargs
 
 
 class Dataset(BaseTable):
     __tablename__ = "datasets"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
-    credential_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("credentials.id"))
-    sources: Mapped[Optional[List[str]]]
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
+    credential_id: Mapped[str] = mapped_column(String(ID_LENGTH))
+    sources: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
     task: Mapped[Optional[str]]
     path: Mapped[Optional[str]]
-    producer: Mapped[Optional[JSON]]
+    producer: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
 
 
 class Model(BaseTable):
     __tablename__ = "models"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
     model_type: Mapped[str]
     base_model: Mapped[str]
     task: Mapped[Optional[str]]
     path: Mapped[Optional[str]]
-    producer: Mapped[Optional[JSON]]
+    producer: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
     deployment: Mapped[Optional[str]]
 
 
 class PromptTemplate(BaseTable):
     __tablename__ = "prompt_templates"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
     text: Mapped[str]
-    arguments: Mapped[Optional[Dict[str, Any]]]
-    model_id: Mapped[Optional[str]] = MappedColumn(String(ID_LENGTH), ForeignKey("models.id"))
-    model_version: Mapped[Optional[str]] = MappedColumn(ForeignKey("models.version"))
-    generation_config: Mapped[Optional[JSON]]
+    arguments: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+    model_id: Mapped[Optional[str]] = mapped_column(String(ID_LENGTH), ForeignKey("models.id"))
+    model_version: Mapped[Optional[str]] = mapped_column(ForeignKey("models.version"))
+    generation_config: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
 
 
 class Document(BaseTable):
     __tablename__ = "documents"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
     path: Mapped[str]
     origin: Mapped[Optional[str]]
 
     # Many-to-many relationship with DataSource
-    ingestions: Mapped[List[DataSource]] = relationship(
-        secondary=ingestions, back_populates="documents", lazy=True,
-    )
-
-
-class WorkflowType(Enum):
-    ingestion = "ingestion"
-    application = "application"
-    data_processing = "data_processing"
-    training = "training"
-    evaluation = "evaluation"
+    ingestions: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+    # ingestions: Mapped[List["DataSource"]] = relationship(
+    #     secondary=ingestions, back_populates="documents", lazy=True, foreign_keys=[ingestions.c.document_id, ingestions.c.document_version]
+    # )
 
 
 class Workflow(BaseTable):
     __tablename__ = "workflows"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
-    workflow_type: Mapped[WorkflowType]
+    project_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
+    workflow_type: Mapped[str]
     function: Mapped[Optional[str]]
-    configuration: Mapped[Optional[JSON]]
-    graph: Mapped[Optional[JSON]]
+    configuration: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+    graph: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
     deployment: Mapped[Optional[str]]
 
 
 class User(BaseTable):
     __tablename__ = "users"
-    project_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("projects.id"))
+    project_id: Mapped[Optional[str]] = mapped_column(String(ID_LENGTH), ForeignKey("projects.id"))
     full_name: Mapped[str]
     email: Mapped[str]
-    policy: Mapped[str]
-    features: Mapped[JSON]
-    is_admin: Mapped[bool] = MappedColumn(default=False)
+    policy: Mapped[Optional[str]]
+    features: Mapped[Optional[JSON]] = mapped_column(type_=JSON)
+    is_admin: Mapped[bool] = mapped_column(default=False)
+
+    def __init__(
+        self,
+        id,
+        name,
+        version,
+        description,
+        owner_id,
+        full_name,
+        email,
+        policy=None,
+        features=None,
+        is_admin=False,
+        project_id=None,
+        labels=None,
+    ):
+        super().__init__(id, name, version, description, owner_id, labels=labels)
+        self.email = email
+        self.full_name = full_name
+        self.is_admin = is_admin
+        self.project_id = project_id
+        self.policy = policy
+        self.features = features
 
 
 class ChatSession(BaseTable):
     __tablename__ = "sessions"
-    workflow_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("workflows.id"))
-    user_id: Mapped[str] = MappedColumn(String(ID_LENGTH), ForeignKey("users.id"))
-    history: Mapped[Optional[BLOB]]
+    workflow_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("workflows.id"))
+    user_id: Mapped[str] = mapped_column(String(ID_LENGTH), ForeignKey("users.id"))
+    history: Mapped[Optional[bytes]] = mapped_column(LargeBinary)  # BLOB in MySQL
 
     def __init__(
         self,

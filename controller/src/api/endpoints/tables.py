@@ -12,25 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-from controller.src.schemas.base import BaseWithMetadata
-from enum import Enum
+from controller.src.db_clients import client
+from fastapi import APIRouter
+
+router = APIRouter()
 
 
-class WorkflowType(str, Enum):
-    RELATIONAL = "relational"
-    VECTOR = "vector"
-    GRAPH = "graph"
-    KEY_VALUE = "key-value"
-    COLUMN_FAMILY = "column-family"
-    STORAGE = "storage"
-    OTHER = "other"
-
-
-class Workflow(BaseWithMetadata):
-    project_id: str
-    workflow_type: WorkflowType
-    function: Optional[str] = None
-    configuration: Optional[str] = None
-    graph: Optional[dict] = None
-    deployment: Optional[str] = None
+@router.post("/tables")
+def create_tables(drop_old: bool = False, names: list[str] = None):
+    return client.create_tables(drop_old=drop_old, names=names)
