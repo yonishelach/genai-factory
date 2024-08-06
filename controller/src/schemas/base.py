@@ -14,10 +14,11 @@
 
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel
+from http.client import HTTPException
 from typing import Dict, Optional, Union
-import yaml
 
+import yaml
+from pydantic import BaseModel
 
 metadata_fields = [
     "name",
@@ -144,7 +145,9 @@ class Base(BaseModel):
 
 
 class BaseWithMetadata(Base):
-    id: Optional[str] = None  # This is optional here but required in the ORM in order to be able to create new objects
+    id: Optional[str] = (
+        None  # This is optional here but required in the ORM in order to be able to create new objects
+    )
     name: str
     version: Optional[str] = ""
     description: Optional[str] = None
@@ -159,3 +162,22 @@ class OutputMode(str, Enum):
     Short = "short"
     Dict = "dict"
     Details = "details"
+
+
+class ApiResponse(BaseModel):
+    success: bool
+    data: Optional[Union[list, BaseModel, dict]] = None
+    error: Optional[str] = None
+
+    def with_raise(self, detail_format=None) -> "ApiResponse":
+        if not self.success:
+            detail_format = detail_format or "API call failed: %s"
+            raise ValueError(detail_format % self.error)
+        return self
+
+    def with_raise_http(self, detail_format=None) -> "ApiResponse":
+        if not self.success:
+            detail_format = detail_format or "API call failed: %s"
+            raise HTTPException(status_code=400, detail=detail_format % self.error)
+        return self
+

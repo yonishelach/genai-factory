@@ -13,11 +13,11 @@
 # limitations under the License.
 
 from typing import Optional
+
 from controller.src.schemas.base import BaseWithMetadata
 
 
 class User(BaseWithMetadata):
-    project_id: str = None
     full_name: str
     email: str
     policy: Optional[str] = None

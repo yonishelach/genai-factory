@@ -19,9 +19,8 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
 from controller.src import model
-from controller.src.model import ApiResponse
-
 from controller.src.config import config, logger
+from controller.src.model import ApiResponse
 from controller.src.sqldb import Base, ChatSessionContext, DocumentCollection, User
 
 

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-from controller.src.schemas.base import BaseWithMetadata
 from enum import Enum
+from typing import Optional
+
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class WorkflowType(str, Enum):

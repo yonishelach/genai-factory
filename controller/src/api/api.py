@@ -1,9 +1,10 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from controller.src.api.endpoints import (
     chat_sessions,
-    datasets,
     data_sources,
+    datasets,
     documents,
     models,
     projects,
@@ -12,6 +13,7 @@ from controller.src.api.endpoints import (
     users,
     workflows,
 )
+
 app = FastAPI()
 
 # Add CORS middleware, remove in production

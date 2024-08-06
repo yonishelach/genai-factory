@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from fastapi import APIRouter, Depends
-from controller.src.schemas import PromptTemplate
+
 from controller.src.api.utils import get_db
 from controller.src.db_clients import client
-
+from controller.src.schemas import PromptTemplate
 
 router = APIRouter()
 
@@ -51,7 +51,9 @@ def update_prompt_template(
     prompt_template_name: str,
     session=Depends(get_db),
 ):
-    return client.update_prompt_template(prompt_template, prompt_template_name, session=session)
+    return client.update_prompt_template(
+        prompt_template, prompt_template_name, session=session
+    )
 
 
 @router.get("/prompt-templates/")

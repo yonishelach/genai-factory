@@ -13,15 +13,18 @@
 # limitations under the License.
 
 from typing import List, Optional
-from controller.src.schemas.base import BaseWithMetadata
+
 from pydantic import BaseModel
+
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class Ingestion(BaseModel):
     data_source_id: str
-    data_source_version: str
+    # data_source_version: str
     document_id: str
-    document_version: str
+    # document_version: str
+    extra_data: Optional[dict] = None
 
 
 class Document(BaseWithMetadata):

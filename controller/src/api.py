@@ -15,13 +15,12 @@ import json
 from typing import List, Optional, Tuple, Union
 
 import requests
-from fastapi import (APIRouter, Depends, FastAPI, File, Header, Request,
-                     UploadFile)
+from fastapi import APIRouter, Depends, FastAPI, File, Header, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from controller.src.config import config
-from controller.src.model import ChatSession, DocCollection, OutputMode, User, QueryItem
+from controller.src.model import ChatSession, DocCollection, OutputMode, QueryItem, User
 from controller.src.sqlclient import client
 
 app = FastAPI()
@@ -68,7 +67,9 @@ def get_auth_user(
         return AuthInfo(username="guest@example.com", token=token)
 
 
-def _send_to_application(path: str, method: str = "POST", request=None, auth=None, **kwargs):
+def _send_to_application(
+    path: str, method: str = "POST", request=None, auth=None, **kwargs
+):
     """
     Send a request to the application's API.
 
@@ -268,7 +269,7 @@ async def update_session(
 
 @router.post("/transcribe")
 async def transcribe_file(file: UploadFile = File(...)):
-    file_contents = await file.read()
+    _ = await file.read()
     file_handler = file.file
     return transcribe_file(file_handler)
 

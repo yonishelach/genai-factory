@@ -13,20 +13,33 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-
-from controller.src import model
+from typing import Iterable, List
 import controller.src.schemas as schemas
+from controller.src import model
 
 
 class Client(ABC):
+    """
+    Base class for all DB clients
+    In order to implement a new DB client, inherit from this class and implement all the methods.
+    """
     @abstractmethod
     def __init__(self):
         pass
 
     @staticmethod
     def _process_output(
-            items, obj_class, mode: schemas.OutputMode = schemas.OutputMode.Details
-    ):
+        items: Iterable, obj_class, mode: schemas.OutputMode = schemas.OutputMode.Details
+    ) -> List[dict]:
+        """
+        Process the output of a query. Use this method to convert the output to the desired format.
+        For example when listing.
+        :param items:       The items to process.
+        :param obj_class:   The class of the items.
+        :param mode:        The output mode.
+
+        :return:            The processed items.
+        """
         if mode == schemas.OutputMode.Names:
             return [item.name for item in items]
         items = [obj_class.from_orm_object(item) for item in items]
@@ -36,185 +49,185 @@ class Client(ABC):
         return [item.to_dict(short=short) for item in items]
 
     @abstractmethod
-    def create_tables(self, drop_old: bool = False, names: list = None):
+    def create_tables(self, drop_old: bool = False, names: list = None) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_project(self, *args, **kwargs):
+    def create_project(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_project(self, *args, **kwargs):
+    def get_project(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_project(self, *args, **kwargs):
+    def delete_project(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_project(self, *args, **kwargs):
+    def update_project(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_projects(self, *args, **kwargs):
+    def list_projects(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_data_source(self, *args, **kwargs):
+    def create_data_source(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_data_source(self, *args, **kwargs):
+    def get_data_source(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_data_source(self, *args, **kwargs):
+    def delete_data_source(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_data_source(self, *args, **kwargs):
+    def update_data_source(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_data_sources(self, *args, **kwargs):
+    def list_data_sources(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_dataset(self, *args, **kwargs):
+    def create_dataset(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_dataset(self, *args, **kwargs):
+    def get_dataset(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_dataset(self, *args, **kwargs):
+    def delete_dataset(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_dataset(self, *args, **kwargs):
+    def update_dataset(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_datasets(self, *args, **kwargs):
+    def list_datasets(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_model(self, *args, **kwargs):
+    def create_model(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_model(self, *args, **kwargs):
+    def get_model(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_model(self, *args, **kwargs):
+    def delete_model(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_model(self, *args, **kwargs):
+    def update_model(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_models(self, *args, **kwargs):
+    def list_models(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_prompt_template(self, *args, **kwargs):
+    def create_prompt_template(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_prompt_template(self, *args, **kwargs):
+    def get_prompt_template(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_prompt_template(self, *args, **kwargs):
+    def delete_prompt_template(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_prompt_template(self, *args, **kwargs):
+    def update_prompt_template(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_prompt_templates(self, *args, **kwargs):
+    def list_prompt_templates(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_document(self, *args, **kwargs):
+    def create_document(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_document(self, *args, **kwargs):
+    def get_document(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_document(self, *args, **kwargs):
+    def delete_document(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_document(self, *args, **kwargs):
+    def update_document(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_documents(self, *args, **kwargs):
+    def list_documents(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_workflow(self, *args, **kwargs):
+    def create_workflow(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_workflow(self, *args, **kwargs):
+    def get_workflow(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_workflow(self, *args, **kwargs):
+    def delete_workflow(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_workflow(self, *args, **kwargs):
+    def update_workflow(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_workflows(self, *args, **kwargs):
+    def list_workflows(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_user(self, *args, **kwargs):
+    def create_user(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_user(self, *args, **kwargs):
+    def get_user(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_user(self, *args, **kwargs):
+    def delete_user(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_user(self, *args, **kwargs):
+    def update_user(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_users(self, *args, **kwargs):
+    def list_users(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def create_session(self, *args, **kwargs):
+    def create_session(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def get_session(self, *args, **kwargs):
+    def get_session(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def delete_session(self, *args, **kwargs):
+    def delete_session(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def update_session(self, *args, **kwargs):
+    def update_session(self, *args, **kwargs) -> schemas.ApiResponse:
         pass
 
     @abstractmethod
-    def list_sessions(self, *args, **kwargs):
+    def list_sessions(self, *args, **kwargs) -> schemas.ApiResponse:
         pass

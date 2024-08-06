@@ -20,13 +20,15 @@ import click
 import yaml
 from tabulate import tabulate
 
-# from controller.src.sqlclient import client
-from controller.src.db_clients import client
-from controller.src.schemas import User, DataSource, Project, QueryItem
-# from controller.src.model import User, DocCollection, QueryItem
-from controller.src.config import config
 # import controller.src.api as api
 from controller.src.api.utils import _send_to_application
+
+# from controller.src.model import User, DocCollection, QueryItem
+from controller.src.config import config
+
+# from controller.src.sqlclient import client
+from controller.src.db_clients import client
+from controller.src.schemas import DataSource, Document, Project, QueryItem, User
 
 
 @click.group()
@@ -101,6 +103,14 @@ def print_config():
 )
 def ingest(path, loader, metadata, version, collection, from_file):
     """Ingest documents into the vector database"""
+    session = client.get_db_session()
+    project = client.get_project("default", session=session).data
+    client.create_document(
+        Document(
+            project_id=project.id,
+            path=path,
+        )
+    )
     params = {
         "path": path,
         "from_file": from_file,

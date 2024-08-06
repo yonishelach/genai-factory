@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base import OutputMode
+from .base import ApiResponse, OutputMode
 from .chat_session import ChatSession, QueryItem
 from .data_source import DataSource
 from .dataset import Dataset

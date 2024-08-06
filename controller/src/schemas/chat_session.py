@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from typing import List, Optional, Tuple
-from controller.src.schemas.base import BaseWithMetadata
+
 from pydantic import BaseModel
+
+from controller.src.schemas.base import BaseWithMetadata
 
 
 class QueryItem(BaseModel):

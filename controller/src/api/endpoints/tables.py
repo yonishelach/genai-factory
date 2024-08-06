@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from controller.src.db_clients import client
 from fastapi import APIRouter
+
+from controller.src.db_clients import client
 
 router = APIRouter()
 

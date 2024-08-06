@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from fastapi import APIRouter, Depends
-from controller.src.schemas import Project
+
 from controller.src.api.utils import get_db
 from controller.src.db_clients import client
-
+from controller.src.schemas import Project
 
 router = APIRouter()
 
@@ -69,4 +69,3 @@ def list_projects(
         output_mode=output_mode,
         session=session,
     )
-

@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from fastapi import APIRouter, Depends
-from controller.src.schemas import DataSource
+
 from controller.src.api.utils import get_db
 from controller.src.db_clients import client
-
+from controller.src.schemas import DataSource
 
 router = APIRouter()
 

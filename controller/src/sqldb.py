@@ -15,8 +15,16 @@
 import datetime
 
 import sqlalchemy
-from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Index, Integer,
-                        String, UniqueConstraint)
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import declarative_base, relationship
 

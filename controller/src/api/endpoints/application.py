@@ -16,6 +16,7 @@ import json
 
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
+
 from controller.src.api.utils import _send_to_application, get_auth_user
 from controller.src.schemas import QueryItem
 

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from controller.src.db_clients import client
-from pydantic import BaseModel
 from typing import List, Union
-from fastapi import Request, Header
-from controller.src.config import config
+
 import requests
+from fastapi import Header, Request
+from pydantic import BaseModel
+
+from controller.src.config import config
+from controller.src.db_clients import client
 
 
 def get_db():
@@ -48,7 +50,9 @@ def get_auth_user(
         return AuthInfo(username="guest@example.com", token=token)
 
 
-def _send_to_application(path: str, method: str = "POST", request=None, auth=None, **kwargs):
+def _send_to_application(
+    path: str, method: str = "POST", request=None, auth=None, **kwargs
+):
     """
     Send a request to the application's API.
 
