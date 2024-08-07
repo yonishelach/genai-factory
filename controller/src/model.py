@@ -21,9 +21,6 @@ import yaml
 from pydantic import BaseModel
 
 
-# ============================== from llmapps/app/schema.py ==============================
-# Temporary: This was copied to here to avoid import from the app like this:
-# from llmapps.app.schema import Conversation, Message
 class ApiResponse(BaseModel):
     success: bool
     data: Optional[Union[list, BaseModel, dict]] = None
@@ -52,11 +49,10 @@ class ChatRole(str, Enum):
 
 class Message(BaseModel):
     role: ChatRole
-    content: str
-    html: Optional[str] = None
+    body: str
+    extra_data: Optional[dict] = None
     sources: Optional[List[dict]] = None
-    rating: Optional[int] = None
-    suggestion: Optional[str] = None
+    human_feedback: Optional[dict] = None
 
 
 class Conversation(BaseModel):
@@ -64,7 +60,7 @@ class Conversation(BaseModel):
     saved_index: int = 0
 
     def __str__(self):
-        return "\n".join([f"{m.role}: {m.content}" for m in self.messages])
+        return "\n".join([f"{m.role}: {m.body}" for m in self.messages])
 
     def add_message(self, role, content, sources=None):
         self.messages.append(Message(role=role, content=content, sources=sources))
@@ -90,14 +86,50 @@ class QueryItem(BaseModel):
     collection: Optional[str] = None
 
 
-# ========================================================================================
+class DataSourceType(str, Enum):
+    RELATIONAL = "relational"
+    VECTOR = "vector"
+    GRAPH = "graph"
+    KEY_VALUE = "key-value"
+    COLUMN_FAMILY = "column-family"
+    STORAGE = "storage"
+    OTHER = "other"
+
+
+class ModelType(str, Enum):
+    model = "model"
+    adapter = "adapter"
+
+
+class Ingestion(BaseModel):
+    data_source_id: str
+    data_source_version: str
+    extra_data: Optional[dict] = None
+
+
+class WorkflowType(str, Enum):
+    RELATIONAL = "relational"
+    VECTOR = "vector"
+    GRAPH = "graph"
+    KEY_VALUE = "key-value"
+    COLUMN_FAMILY = "column-family"
+    STORAGE = "storage"
+    OTHER = "other"
+
+
+class OutputMode(str, Enum):
+    Names = "names"
+    Short = "short"
+    Dict = "dict"
+    Details = "details"
 
 
 metadata_fields = [
+    "uid",
     "name",
     "description",
     "labels",
-    "owner_name",
+    "owner_id",
     "created",
     "updated",
     "version",
@@ -181,20 +213,26 @@ class Base(BaseModel):
         return orm_object
 
     def to_orm_object(self, obj_class):
+        # Getting all fields from the object into a dictionary
         struct = self.to_dict(drop_none=False, short=False)
+
+        # Getting only the fields that are in metadata_fields and _top_level_fields without timestamps
         obj_dict = {
             k: v
             for k, v in struct.items()
             if k in (metadata_fields + self._top_level_fields)
             and k not in ["created", "updated"]
         }
+        # Getting all fields that are not in metadata_fields and _top_level_fields into spec
         obj_dict["spec"] = {
             k: v
             for k, v in struct.items()
             if k not in metadata_fields + self._top_level_fields
         }
+        # Popping labels from the dictionary
         labels = obj_dict.pop("labels", None)
         obj = obj_class(**obj_dict)
+        # Putting the labels back into the object
         if labels:
             obj.labels.clear()
             for name, value in labels.items():
@@ -234,39 +272,84 @@ class User(BaseWithMetadata):
     full_name: Optional[str] = None
     features: Optional[dict[str, str]] = None
     policy: Optional[dict[str, str]] = None
+    is_admin: Optional[bool] = False
 
 
-class DocCollection(BaseWithMetadata):
-    _top_level_fields = ["owner_name"]
-
-    owner_name: Optional[str] = None
-    category: Optional[str] = None
-    db_args: Optional[dict[str, str]] = None
+class Project(BaseWithVerMetadata):
+    pass
 
 
-class ChatSession(BaseWithMetadata):
-    _extra_fields = ["history", "features", "state", "agent_name"]
-    _top_level_fields = ["username"]
+class DataSource(BaseWithVerMetadata):
+    # _extra_fields = ["project_id"]
+    _top_level_fields = ["data_source_type"]
 
-    username: Optional[str] = None
-    agent_name: Optional[str] = None
-    history: Optional[List[Message]] = []
-    features: Optional[dict[str, str]] = None
-    state: Optional[dict[str, str]] = None
+    project_id: str
+    data_source_type: DataSourceType
+    database_kwargs: Optional[dict[str, str]] = None
 
-    def to_conversation(self):
-        return Conversation.from_list(self.history)
+
+class Dataset(BaseWithVerMetadata):
+    # _extra_fields = ["project_id"]
+    _top_level_fields = ["task"]
+
+    project_id: str
+    task: str
+    sources: Optional[List[str]] = None
+    path: str
+    producer: Optional[str] = None
+
+
+class Model(BaseWithVerMetadata):
+    # _extra_fields = ["project_id", "path", "producer", "deployment"]
+    _extra_fields = ["path", "producer", "deployment"]
+    _top_level_fields = ["model_type", "base_model", "task"]
+
+    project_id: str
+    model_type: ModelType
+    base_model: str
+    task: Optional[str] = None
+    path: Optional[str] = None
+    producer: Optional[str] = None
+    deployment: Optional[str] = None
+
+
+class PromptTemplate(BaseWithVerMetadata):
+    # _extra_fields = ["project_id", "arguments"]
+    _extra_fields = ["arguments"]
+    _top_level_fields = ["text"]
+
+    project_id: str
+    text: str
+    arguments: Optional[List[str]] = None
 
 
 class Document(BaseWithVerMetadata):
-    collection: str
-    source: str
+    # _extra_fields = ["project_id", "origin"]
+    _extra_fields = ["origin"]
+    _top_level_fields = ["path"]
+    project_id: str
+    path: str
     origin: Optional[str] = None
-    num_chunks: Optional[int] = None
+    ingestions: Optional[List[Ingestion]] = None
 
 
-class OutputMode(str, Enum):
-    Names = "names"
-    Short = "short"
-    Dict = "dict"
-    Details = "details"
+class Workflow(BaseWithVerMetadata):
+    # _extra_fields = ["project_id"]
+    _top_level_fields = ["workflow_type", "workflow_function"]
+
+    project_id: str
+    workflow_type: WorkflowType
+    workflow_function: Optional[str] = None
+    configuration: Optional[str] = None
+    graph: Optional[dict] = None
+    deployment: Optional[str] = None
+
+
+class ChatSession(BaseWithMetadata):
+    _extra_fields = ["history"]
+
+    workflow_id: str
+    history: Optional[List[Message]] = []
+
+    def to_conversation(self):
+        return Conversation.from_list(self.history)

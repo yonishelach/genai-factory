@@ -22,7 +22,7 @@ from controller.src import model
 from controller.src.model import ApiResponse
 
 from controller.src.config import config, logger
-from controller.src.sqldb import Base, ChatSessionContext, DocumentCollection, User
+from controller.src.sqldb import Base, ChatSession, DataSource, User
 
 
 class SqlClient:
@@ -136,29 +136,29 @@ class SqlClient:
 
     def get_collection(self, name: str, session: sqlalchemy.orm.Session = None):
         logger.debug(f"Getting collection: name={name}")
-        return self._get(session, DocumentCollection, model.DocCollection, name=name)
+        return self._get(session, DataSource, model.DataSource, name=name)
 
     def create_collection(
-        self, collection: model.DocCollection, session: sqlalchemy.orm.Session = None
+        self, collection: model.DataSource, session: sqlalchemy.orm.Session = None
     ):
         logger.debug(f"Creating collection: {collection}")
         if isinstance(collection, dict):
-            collection = model.DocCollection.from_dict(collection)
-        return self._create(session, DocumentCollection, collection)
+            collection = model.DataSource.from_dict(collection)
+        return self._create(session, DataSource, collection)
 
     def update_collection(
-        self, collection: model.DocCollection, session: sqlalchemy.orm.Session = None
+        self, collection: model.DataSource, session: sqlalchemy.orm.Session = None
     ):
         logger.debug(f"Updating collection: {collection}")
         if isinstance(collection, dict):
-            collection = model.DocCollection.from_dict(collection)
+            collection = model.DataSource.from_dict(collection)
         return self._update(
-            session, DocumentCollection, collection, name=collection.name
+            session, DataSource, collection, name=collection.name
         )
 
     def delete_collection(self, name: str, session: sqlalchemy.orm.Session = None):
         logger.debug(f"Deleting collection: name={name}")
-        return self._delete(session, DocumentCollection, name=name)
+        return self._delete(session, DataSource, name=name)
 
     def list_collections(
         self,
@@ -171,12 +171,12 @@ class SqlClient:
             f"Getting collections: owner={owner}, labels_match={labels_match}, mode={output_mode}"
         )
         session = self.get_db_session(session)
-        query = session.query(DocumentCollection)
+        query = session.query(DataSource)
         if owner:
-            query = query.filter(DocumentCollection.owner_name == owner)
+            query = query.filter(DataSource.owner_name == owner)
         if labels_match:
             pass
-        data = _process_output(query.all(), model.DocCollection, output_mode)
+        data = _process_output(query.all(), model.DataSource, output_mode)
         return ApiResponse(success=True, data=data)
 
     def get_session(
@@ -190,7 +190,7 @@ class SqlClient:
         )
         if session_id:
             return self._get(
-                session, ChatSessionContext, model.ChatSession, name=session_id
+                session, ChatSession, model.ChatSession, name=session_id
             )
         elif username:
             # get the last session for the user
@@ -208,19 +208,19 @@ class SqlClient:
         self, chat_session: model.ChatSession, session: sqlalchemy.orm.Session = None
     ):
         logger.debug(f"Creating chat session: {chat_session}")
-        return self._create(session, ChatSessionContext, chat_session)
+        return self._create(session, ChatSession, chat_session)
 
     def update_session(
         self, chat_session: model.ChatSession, session: sqlalchemy.orm.Session = None
     ):
         logger.debug(f"Updating chat session: {chat_session}")
         return self._update(
-            session, ChatSessionContext, chat_session, name=chat_session.name
+            session, ChatSession, chat_session, name=chat_session.name
         )
 
     def delete_session(self, session_id: str, session: sqlalchemy.orm.Session = None):
         logger.debug(f"Deleting chat session: session_id={session_id}")
-        return self._delete(session, ChatSessionContext, name=session_id)
+        return self._delete(session, ChatSession, name=session_id)
 
     def list_sessions(
         self,
@@ -234,16 +234,16 @@ class SqlClient:
             f"Getting chat sessions: username={username}, created>{created_after}, last={last}, mode={output_mode}"
         )
         session = self.get_db_session(session)
-        query = session.query(ChatSessionContext)
-        if username:
-            query = query.filter(ChatSessionContext.username == username)
+        query = session.query(ChatSession)
+        # if username:
+        #     query = query.filter(ChatSession.username == username)
         if created_after:
             if isinstance(created_after, str):
                 created_after = datetime.datetime.strptime(
                     created_after, "%Y-%m-%d %H:%M"
                 )
-            query = query.filter(ChatSessionContext.created >= created_after)
-        query = query.order_by(ChatSessionContext.updated.desc())
+            query = query.filter(ChatSession.created >= created_after)
+        query = query.order_by(ChatSession.updated.desc())
         if last > 0:
             query = query.limit(last)
         data = _process_output(query.all(), model.ChatSession, output_mode)
