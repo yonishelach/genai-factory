@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from controller.src.config import config
-from controller.src.model import ChatSession, DocCollection, OutputMode, User, QueryItem
+from controller.src.model import ChatSession, DataSource, OutputMode, User, QueryItem
 from controller.src.sqlclient import client
 
 app = FastAPI()
@@ -163,7 +163,7 @@ def get_collection(name: str, session=Depends(get_db)):
 def create_collection(
     request: Request,
     name: str,
-    collection: DocCollection,
+    collection: DataSource,
     session=Depends(get_db),
     auth: AuthInfo = Depends(get_auth_user),
 ):

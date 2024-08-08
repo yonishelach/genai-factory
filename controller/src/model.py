@@ -319,6 +319,7 @@ class PromptTemplate(BaseWithVerMetadata):
     _top_level_fields = ["text"]
 
     project_id: str
+    model_id: str
     text: str
     arguments: Optional[List[str]] = None
 
@@ -330,7 +331,7 @@ class Document(BaseWithVerMetadata):
     project_id: str
     path: str
     origin: Optional[str] = None
-    ingestions: Optional[List[Ingestion]] = None
+    # ingestions: Optional[List[Ingestion]] = None
 
 
 class Workflow(BaseWithVerMetadata):
@@ -347,8 +348,10 @@ class Workflow(BaseWithVerMetadata):
 
 class ChatSession(BaseWithMetadata):
     _extra_fields = ["history"]
+    _top_level_fields = ["workflow_id"]
 
     workflow_id: str
+    user_id: str
     history: Optional[List[Message]] = []
 
     def to_conversation(self):

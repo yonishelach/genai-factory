@@ -53,6 +53,27 @@ def update_labels(obj, labels: dict):
             obj.labels.append(obj.Label(name=name, value=value, parent=obj.name))
 
 
+# Association table between users and projects for many-to-many relationship
+user_project = Table(
+    "user_project",
+    Base.metadata,
+    Column("user_uid", ForeignKey("users.uid")),
+    Column("project_uid", ForeignKey("projects.uid")),
+    Column("project_version", ForeignKey("projects.version")),
+)
+
+# Association table between documents and data sources (ingestions) for many-to-many relationship
+ingestions = Table(
+    "ingestions",
+    Base.metadata,
+    Column("document_uid", String(ID_LENGTH), ForeignKey("documents.uid")),
+    Column("document_version", String(TEXT_LENGTH), ForeignKey("documents.version")),
+    Column("data_source_uid", String(ID_LENGTH), ForeignKey("data_sources.uid")),
+    Column("data_source_version", String(TEXT_LENGTH), ForeignKey("data_sources.version")),
+    Column("extra_data", JSON),
+)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -70,9 +91,15 @@ class User(Base):
     spec = Column(MutableDict.as_mutable(JSON), nullable=True)
     Label = make_label(__tablename__)
     labels = relationship(Label, cascade="all, delete-orphan")
-
     email = Column(String(TEXT_LENGTH), nullable=False, unique=True)
     full_name = Column(String(TEXT_LENGTH), nullable=False)
+
+    # Relationships:
+
+    # many-to-many relationship with the 'Project' table
+    projects = relationship("Project", secondary=user_project, back_populates="users")
+    # one-to-many relationship with the 'ChatSession' table
+    chat_sessions = relationship("ChatSession", back_populates="user")
 
 
 class Project(Base):
@@ -100,7 +127,7 @@ class Project(Base):
     # one-to-many relationship with the 'Model' table
     models = relationship("Model", back_populates="project")
     # one-to-many relationship with the 'PromptTemplate' table
-    prompts = relationship("PromptTemplate", back_populates="project")
+    prompt_templates = relationship("PromptTemplate", back_populates="project")
     # one-to-many relationship with the 'Dateset' table
     datasets = relationship("Dataset", back_populates="project")
     # one-to-many relationship with the 'DataSource' table
@@ -109,6 +136,8 @@ class Project(Base):
     documents = relationship("Document", back_populates="project")
     # one-to-many relationship with the 'Workflow' table
     workflows = relationship("Workflow", back_populates="project")
+    # many-to-many relationship with the 'User' table
+    users = relationship("User", secondary=user_project, back_populates="projects")
 
     def __init__(self, uid, version, name, description, owner_id, created, updated, spec, labels):
         self.uid = uid
@@ -145,13 +174,14 @@ class DataSource(Base):
     owner_id = Column(String(ID_LENGTH), sqlalchemy.ForeignKey("users.uid"), nullable=False)
     data_source_type = Column(String(TEXT_LENGTH), nullable=True)
     project_id = Column(String(ID_LENGTH), ForeignKey("projects.uid"), nullable=False)
+
     # Relationships:
 
-    # Many-to-one relationship with the 'Project' table
+    # many-to-one relationship with the 'Project' table
     project = relationship("Project", back_populates="data_sources")
-    # Many-to-many relationship with the 'Document' table
-    documents = relationship("Document", back_populates="data_sources")  # Todo: add data_sources in the document table
-    # TODO: add a many-to-one relationship with the 'Credentials' table
+    # many-to-many relationship with the 'Document' table
+    documents = relationship("Document", secondary=ingestions, back_populates="ingestions")
+    # TODO: add a many-to-one relationship with the 'Credentials' table in the next version
 
 
 class Dataset(Base):
@@ -179,7 +209,7 @@ class Dataset(Base):
 
     # Relationships:
 
-    # Many-to-one relationship with the 'Project' table
+    # many-to-one relationship with the 'Project' table
     project = relationship("Project", back_populates="datasets")
     # TODO: add a many-to-one relationship with the 'Credentials' table
 
@@ -209,10 +239,10 @@ class Model(Base):
 
     # Relationships:
 
-    # Many-to-one relationship with the 'Project' table
+    # many-to-one relationship with the 'Project' table
     project = relationship("Project", back_populates="models")
-    # One-to-one relationship with the 'PromptTemplate' table
-    # prompt = relationship("PromptTemplate", secondary=prompt_model, back_populates="model")
+    # one-to-one relationship with the 'PromptTemplate' table
+    prompt_template = relationship("PromptTemplate", back_populates="model", uselist=False)
 
 
 class PromptTemplate(Base):
@@ -234,8 +264,15 @@ class PromptTemplate(Base):
     Label = make_label(__tablename__)
     labels = relationship(Label, cascade="all, delete-orphan")
     text = Column(String(TEXT_LENGTH), nullable=True)
+    project_id = Column(String(ID_LENGTH), ForeignKey("projects.uid"), nullable=False)
+    model_id = Column(String(ID_LENGTH), ForeignKey("models.uid"), nullable=False)
 
     # Relationships:
+
+    # many-to-one relationship with the 'Project' table
+    project = relationship("Project", back_populates="prompt_templates")
+    # one-to-one relationship with the 'Model' table
+    model = relationship("Model", back_populates="prompt_template")
 
 
 class Document(Base):
@@ -259,9 +296,13 @@ class Document(Base):
     Label = make_label(__tablename__)
     labels = relationship(Label, cascade="all, delete-orphan")
     path = Column(String(TEXT_LENGTH), nullable=True)
-
+    project_id = Column(String(ID_LENGTH), ForeignKey("projects.uid"), nullable=False)
     # relationships:
-    collection = relationship(DataSource)
+
+    # many-to-one relationship with the 'Project' table
+    project = relationship("Project", back_populates="documents")
+    # many-to-many relationship with the 'ingestions' table
+    ingestions = relationship("DataSource", secondary=ingestions, back_populates="document")
 
 
 class Workflow(Base):
@@ -284,12 +325,17 @@ class Workflow(Base):
     labels = relationship(Label, cascade="all, delete-orphan")
     workflow_type = Column(String(TEXT_LENGTH), nullable=True)
     workflow_function = Column(String(TEXT_LENGTH), nullable=True)
+    project_id = Column(String(ID_LENGTH), ForeignKey("projects.uid"), nullable=False)
 
     # Relationships:
-    owner = relationship(User)
+
+    # many-to-one relationship with the 'Project' table
+    project = relationship("Project", back_populates="workflows")
+    # one-to-many relationship with the 'ChatSession' table
+    chat_sessions = relationship("ChatSession", back_populates="workflow")
 
 
-class ChatSession(Base):
+class Session(Base):
     __tablename__ = "chat_sessions"
 
     uid = Column(String(ID_LENGTH), primary_key=True, nullable=False)
@@ -307,34 +353,25 @@ class ChatSession(Base):
     spec = Column(MutableDict.as_mutable(JSON), nullable=True)
     Label = make_label(__tablename__)
     labels = relationship(Label, cascade="all, delete-orphan")
+    workflow_id = Column(String(ID_LENGTH), ForeignKey("workflows.uid"), nullable=False)
+    user_id = Column(String(ID_LENGTH), ForeignKey("users.uid"), nullable=False)
 
-    # Define the relationship with the 'Users' table
-    user = relationship(User)
+    # Relationships:
 
+    # many-to-one relationship with the 'Workflow' table
+    workflow = relationship("Workflow", back_populates="chat_sessions")
+    # many-to-one relationship with the 'User' table
+    user = relationship("User", back_populates="chat_sessions")
 
-
-
-
-ingetions = Table(
-    "ingestions",
-    Base.metadata,
-    Column("data_source_uid", String(ID_LENGTH), ForeignKey("data_sources.uid")),
-    Column("data_source_version", String(TEXT_LENGTH), ForeignKey("data_sources.version")),
-    Column("extra_data", JSON),
-)
-
-
-
-
-
-prompt_model = Table(
-    "prompt_model",
-    Base.metadata,
-    Column("prompt_uid", String(ID_LENGTH), ForeignKey("prompts.uid")),
-    Column("prompt_version", String(TEXT_LENGTH), ForeignKey("prompts.version")),
-    Column("model_uid", String(ID_LENGTH), ForeignKey("models.uid")),
-    Column("model_version", String(TEXT_LENGTH), ForeignKey("models.version")),
-    Column("generation_config", JSON),
-)
+#
+# prompt_model = Table(
+#     "prompt_model",
+#     Base.metadata,
+#     Column("prompt_uid", String(ID_LENGTH), ForeignKey("prompts.uid")),
+#     Column("prompt_version", String(TEXT_LENGTH), ForeignKey("prompts.version")),
+#     Column("model_uid", String(ID_LENGTH), ForeignKey("models.uid")),
+#     Column("model_version", String(TEXT_LENGTH), ForeignKey("models.version")),
+#     Column("generation_config", JSON),
+# )
 
 

@@ -21,7 +21,7 @@ import yaml
 from tabulate import tabulate
 
 from controller.src.sqlclient import client
-from controller.src.model import User, DocCollection, QueryItem
+from controller.src.model import User, DataSource, QueryItem
 from controller.src.config import config
 import controller.src.api as api
 
@@ -48,7 +48,7 @@ def initdb():
         session=session,
     )
     client.create_collection(
-        DocCollection(
+        DataSource(
             name="default",
             description="Default Collection",
             owner_name="guest",
@@ -198,14 +198,14 @@ def update_collection(name, owner, description, category, labels):
     if collection_exists:
         client.update_collection(
             session=session,
-            collection=DocCollection(
+            collection=DataSource(
                 name=name, description=description, category=category, labels=labels
             ),
         ).with_raise()
     else:
         client.create_collection(
             session=session,
-            collection=DocCollection(
+            collection=DataSource(
                 name=name,
                 description=description,
                 owner_name=owner,
