@@ -40,8 +40,12 @@ const Message = () => {
       const safeMessages = Array.isArray(prevMessages) ? prevMessages : []
       return [...safeMessages, { role: 'AI', content: '', sources: [] }]
     })
-
-    const result = await Client.inferWorkflow('default', '1dfd7fc7c4024501850e3541abc3ed9f', {
+    const workflows = await Client.getWorkflow('default', 'default')
+    // Get the id of the first workflow:
+    const workflowId = workflows.data[
+      Object.keys(workflows.data)[0]
+    ].uid
+    const result = await Client.inferWorkflow('default', workflowId, {
       question: inputValue,
       session_id: sessionId,
       data_source: 'default'

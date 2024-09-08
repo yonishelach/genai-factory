@@ -147,6 +147,17 @@ class ApiClient {
       return this.handleError(error as Error)
     }
   }
+
+  async getWorkflow(projectName: string, workflowName: string) {
+    try {
+      const response = await this.client.get(`/projects/${projectName}/workflows`, {
+        params: {name: workflowName || 'default'}
+      })
+      return this.handleResponse(response)
+    } catch (error) {
+      return this.handleError(error as Error)
+    }
+  }
 }
 
 function getClient() {

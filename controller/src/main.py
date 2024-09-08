@@ -85,18 +85,18 @@ def initdb():
     )
 
     # Create Workflow:
-    click.echo("Creating default workflow")
-    client.create_workflow(
-        Workflow(
-            name="default",
-            description="Default Workflow",
-            owner_id=user_id,
-            project_id=project_id,
-            workflow_type="application",
-            deployment="http://localhost:8000/api/workflows/default",
-        ),
-        session=session,
-    )
+    # click.echo("Creating default workflow")
+    # client.create_workflow(
+    #     Workflow(
+    #         name="default",
+    #         description="Default Workflow",
+    #         owner_id=user_id,
+    #         project_id=project_id,
+    #         workflow_type="application",
+    #         deployment="http://localhost:8000/api/workflows/default",
+    #     ),
+    #     session=session,
+    # )
     session.close()
 
 
