@@ -28,9 +28,10 @@ from _common.schemas import (
     User,
     Workflow,
 )
-from controller.src.api.utils import _send_to_application
-from controller.src.config import config
-from controller.src.db import client
+
+from controller.api.utils import _send_to_application
+from controller.config import config
+from controller.db import client
 
 
 @click.group()
