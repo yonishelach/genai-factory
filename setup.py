@@ -25,5 +25,5 @@ setup(
     version="0.1",
     packages=["genai_factory.src.genai_factory"],
     install_requires=get_requirements(),
-    entry_points={"console_scripts": ["genai-factory=genai_factory.__main__:main"]},
+    entry_points={"console_scripts": ["genai-factory=genai_factory.src.genai_factory.__main__:main"]},
 )
