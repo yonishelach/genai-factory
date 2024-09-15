@@ -13,6 +13,6 @@
 # limitations under the License.
 
 from genai_factory.workflows.workflow import Workflow
-from genai_factory.workflows.workflow_server import WorkflowServer
+from genai_factory.workflows.workflow_server import WorkflowServer, logger
 
 workflow_server = WorkflowServer()
