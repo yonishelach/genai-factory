@@ -23,7 +23,7 @@ def get_requirements():
 setup(
     name="genai-factory",
     version="0.1",
-    packages=find_packages("genai_factory.src"),
+    packages=find_packages("genai_factory/src"),
     install_requires=get_requirements(),
     entry_points={"console_scripts": ["genai-factory=genai_factory.__main__:main"]},
 )
