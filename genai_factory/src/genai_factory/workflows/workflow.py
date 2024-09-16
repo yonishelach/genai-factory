@@ -67,7 +67,7 @@ class Workflow:
             version=self._version,
             workflow_type=self._workflow_type,
             configuration=self.get_config(),
-            graph=self._graph.to_dict(),
+            graph=[step.to_dict() for step in self._graph],
             labels=self._labels,
             description=self._description,
             deployment=self._deployment,
