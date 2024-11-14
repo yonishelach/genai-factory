@@ -13,6 +13,6 @@
 # limitations under the License.
 
 from genai_factory.workflows.workflow import Workflow
-from genai_factory.workflows.workflow_server import WorkflowServer
+from genai_factory.workflows.workflow_server import WorkflowServer, graph_initializer
 
 workflow_server = WorkflowServer()
