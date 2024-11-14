@@ -113,20 +113,18 @@ class WorkflowServer:
                 session_store=self._session_store,
             )
 
-    def _commit(self):
+    def _commit(self, deployment: str = None):
         """
         Commit the workflows to the controller.
         """
         for workflow in self._workflows.values():
-            workflow.set_deployment()
+            workflow.set_deployment(deployment)
             self._controller_client.update_workflow(workflow.to_schema())
 
     def api_startup(self):
         print("\nstartup event\n")
 
-    def deploy(self, router=None):
-        self._build()
-        self._commit()
+    def _fastapi_deploy(self, router=None):
         from fastapi import FastAPI
         from fastapi.middleware.cors import CORSMiddleware
 
@@ -150,3 +148,48 @@ class WorkflowServer:
             app.include_router(router)
         url = urlparse(self._config.deployment_url)
         uvicorn.run(app, host=url.hostname, port=url.port)
+
+    def _nuclio_deploy(self):
+        import mlrun
+        project = mlrun.get_or_create_project("gai-fac-1")
+        project.save()
+        serving_function = project.set_function("dummy_file.py", name="workflow-server", kind="serving", image="yonishelach/genai-factory:try1")
+        serving_function.spec.graph = self._workflows["default"]._graph
+        serving_function.spec.graph_initializer = "genai_factory.workflows.graph_initializer"
+        print("*" * 80)
+        print("Serving function:")
+        print(serving_function.to_yaml())
+        print("*" * 80)
+        deployment = serving_function.deploy()
+        self._commit(deployment)
+
+    def deploy(self, router=None, deployer: str = "fastapi"):
+        self._build()
+        self._commit()
+        if deployer == "nuclio":
+            self._nuclio_deploy()
+        elif deployer == "fastapi":
+            self._fastapi_deploy(router)
+        else:
+            raise ValueError(f"Invalid deployer: {deployer}")
+
+def graph_initializer(server):
+    context = server.context
+
+    def register_prompt(
+        name, template, description: str = None, llm_args: dict = None
+    ):
+        if not hasattr(context, "prompts"):
+            context.prompts = {}
+        context.prompts[name] = (template, llm_args)
+
+    if getattr(context, "_config", None) is None:
+        context._config =  WorkflowServerConfig()
+    if getattr(context, "session_store", None) is None:
+        context.session_store = SessionStore(
+            ControllerClient(
+                controller_url=context._config.controller_url,
+                project_name=context._config.project_name,
+                username=context._config.controller_username,
+            )
+        )
